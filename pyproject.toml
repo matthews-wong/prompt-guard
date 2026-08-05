@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-guard"
+version = "0.1.0"
+description = "Offline, deterministic pre-filter that screens LLM inputs for prompt-injection and PII."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Matthews Wong" }]
+keywords = ["llm", "ai-security", "prompt-injection", "pii", "jailbreak", "guardrails"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Security",
+]
+dependencies = ["click>=8.1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+prompt-guard = "promptguard.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/matthews-wong"
+
+[tool.setuptools]
+packages = ["promptguard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
