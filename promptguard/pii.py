@@ -10,6 +10,8 @@ checksum so that arbitrary 16-digit numbers are not flagged as cards.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import re
 
 from promptguard.models import Finding, Severity
@@ -51,6 +53,13 @@ _SECRET_PREFIXED_RE = re.compile(
 )
 _SECRET_GENERIC_RE = re.compile(
     r"(?<![\w/+=-])[A-Za-z0-9_\-]{32,}(?![\w/+=-])",
+)
+
+# Base64-ish runs: the base64 alphabet, at least 16 chars, optional padding.
+# Length is validated to be a multiple of 4 (and content re-validated) before
+# an actual decode is attempted, so this only pre-selects candidates.
+_BASE64_RE = re.compile(
+    r"(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{16,}={0,2}(?![A-Za-z0-9+/=])",
 )
 
 # A minimum digit count guards against flagging things that merely look phone-ish.
@@ -187,6 +196,50 @@ def detect_secrets(text: str) -> list[Finding]:
     return findings
 
 
+def detect_base64_secrets(text: str) -> list[Finding]:
+    """Flag base64-encoded blobs that decode to a known secret token.
+
+    Base64-encoding a credential is a common way to smuggle it past a naive
+    keyword/regex filter (the raw ``AKIA...`` never appears in the text). We
+    decode each candidate base64 run and re-run the known-prefix secret matcher
+    on the decoded string; a match is reported HIGH with the *encoded* span so
+    redaction masks the blob as it appears in the input.
+    """
+    findings: list[Finding] = []
+    for match in _BASE64_RE.finditer(text):
+        blob = match.group()
+        # Valid base64 is always a multiple of 4 chars; skip the rest cheaply.
+        if len(blob) % 4 != 0:
+            continue
+        try:
+            decoded_bytes = base64.b64decode(blob, validate=True)
+        except (binascii.Error, ValueError):
+            continue
+        try:
+            decoded = decoded_bytes.decode("ascii")
+        except UnicodeDecodeError:
+            continue
+        # Require printable text so we compare against secret patterns, not
+        # against arbitrary decoded binary that happens to contain the bytes.
+        if not decoded.isprintable():
+            continue
+        if _SECRET_PREFIXED_RE.search(decoded):
+            findings.append(
+                Finding(
+                    category="pii.base64_secret",
+                    severity=Severity.HIGH,
+                    message=(
+                        "Base64-encoded secret detected "
+                        "(decodes to a known API-key / token pattern)."
+                    ),
+                    start=match.start(),
+                    end=match.end(),
+                    matched=blob,
+                )
+            )
+    return findings
+
+
 def detect_all(text: str) -> list[Finding]:
     """Run every PII/secret detector and return the combined findings."""
     findings: list[Finding] = []
@@ -195,4 +248,5 @@ def detect_all(text: str) -> list[Finding]:
     findings.extend(detect_credit_cards(text))
     findings.extend(detect_ips(text))
     findings.extend(detect_secrets(text))
+    findings.extend(detect_base64_secrets(text))
     return findings

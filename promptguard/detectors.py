@@ -26,6 +26,7 @@ DETECTORS: tuple[Detector, ...] = (
     pii.detect_credit_cards,
     pii.detect_ips,
     pii.detect_secrets,
+    pii.detect_base64_secrets,
 )
 
 

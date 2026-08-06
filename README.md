@@ -57,11 +57,13 @@ findings) and attaches a redacted copy of the input.
 | `pii.credit_card` | `4111 1111 1111 1111` (validated with the **Luhn** checksum) | high |
 | `pii.ip` | `192.168.1.24` | low |
 | `pii.secret` | `AKIA…`, `sk-…`, `ghp_…`, `xoxb-…`, `AIza…`, long high-entropy tokens | high / medium |
+| `pii.base64_secret` | a secret hidden in base64, e.g. `QUtJQUlPU0ZPRE5ON0VYQU1QTEU=` decoding to `AKIA…` | high |
 
 ## Features
 
 - **Two detector families** — prompt-injection/jailbreak heuristics and PII/secret regexes — behind one `scan()` call.
 - **Luhn-validated card detection** — arbitrary 16-digit numbers are rejected; only checksum-valid candidates are flagged.
+- **Base64-encoded secret detection** — decodes base64 blobs and flags those that decode to a known key/token pattern (`AKIA…`, `sk-…`, `ghp_…`, …), catching credentials smuggled past a naive keyword filter.
 - **Structured `RiskReport`** — every finding carries a category, severity, message, and exact matched span offsets.
 - **Automatic redaction** — a masked copy of the input with `[EMAIL]`, `[CARD]`, `[INJECTION]`, etc. in place of sensitive spans.
 - **Offline & deterministic** — stdlib `re` only for detection; no network, no model, reproducible output.
@@ -207,7 +209,7 @@ invalid card numbers, and redaction removes the sensitive spans.
 
 - Configurable rule packs (enable/disable categories, adjust severities via config).
 - Additional PII: IBANs, SSNs, physical addresses, IPv6.
-- Base64 / hex / unicode-escape decoding pass before matching, to catch obfuscated injections.
+- Hex / unicode-escape decoding pass before matching, to catch obfuscated injections (base64-encoded *secrets* are already decoded and matched).
 - Allowlist / context rules to reduce false positives on structured technical text.
 - Optional pluggable scoring so downstream code can gate on a numeric risk score.
 

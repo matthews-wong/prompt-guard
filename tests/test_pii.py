@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import base64
+
 from promptguard import pii
 from promptguard.models import Severity
 from promptguard.pii import _luhn_valid
+
+
+def _b64(value: str) -> str:
+    return base64.b64encode(value.encode("ascii")).decode("ascii")
 
 
 def test_email_detected() -> None:
@@ -73,6 +79,39 @@ def test_openai_style_key_detected() -> None:
 
 def test_plain_word_not_secret() -> None:
     assert pii.detect_secrets("this is an ordinary sentence with words") == []
+
+
+def test_base64_encoded_aws_key_detected() -> None:
+    # An AWS key hidden inside base64 to evade a plain keyword/regex filter.
+    blob = _b64("AKIAIOSFODNN7EXAMPLE")
+    findings = pii.detect_base64_secrets(f"payload: {blob} end")
+    assert len(findings) == 1
+    assert findings[0].category == "pii.base64_secret"
+    assert findings[0].severity == Severity.HIGH
+    assert findings[0].matched == blob
+
+
+def test_base64_encoded_openai_key_detected() -> None:
+    blob = _b64("sk-abcdefghijklmnopqrstuvwxyz123456")
+    findings = pii.detect_base64_secrets(f"token: {blob}")
+    assert any(f.category == "pii.base64_secret" for f in findings)
+
+
+def test_base64_of_plain_text_not_flagged() -> None:
+    # Long, valid base64 that decodes to ordinary prose is not a secret.
+    blob = _b64("the quick brown fox jumps over the lazy dog today")
+    assert pii.detect_base64_secrets(f"note: {blob}") == []
+
+
+def test_non_base64_text_not_flagged() -> None:
+    # Ordinary words are not valid base64 candidates and must stay clean.
+    assert pii.detect_base64_secrets("this is an ordinary sentence with words") == []
+
+
+def test_base64_secret_included_in_detect_all() -> None:
+    blob = _b64("AKIAIOSFODNN7EXAMPLE")
+    categories = {f.category for f in pii.detect_all(f"data {blob}")}
+    assert "pii.base64_secret" in categories
 
 
 def test_detect_all_combines_categories() -> None:

@@ -16,6 +16,7 @@ _LABELS: dict[str, str] = {
     "pii.credit_card": "CARD",
     "pii.ip": "IP",
     "pii.secret": "SECRET",
+    "pii.base64_secret": "SECRET",
     "injection": "INJECTION",
 }
 
