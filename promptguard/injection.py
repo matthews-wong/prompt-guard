@@ -36,15 +36,15 @@ _RULES: tuple[_Rule, ...] = (
         "injection.override",
         Severity.HIGH,
         "Attempt to ignore or override prior instructions.",
-        r"\b(?:ignore|disregard|forget|override)\b[^.\n]{0,40}?"
-        r"\b(?:previous|prior|above|earlier|all)\b[^.\n]{0,20}?"
+        r"\b(?:ignore|disregard|forget|override)\b[^.]{0,40}?"
+        r"\b(?:previous|prior|above|earlier|all)\b[^.]{0,20}?"
         r"\b(?:instruction|instructions|prompt|prompts|rule|rules|context)\b",
     ),
     _rule(
         "injection.override",
         Severity.HIGH,
         "Attempt to discard the system prompt or reset behaviour.",
-        r"\b(?:ignore|disregard|forget)\b[^.\n]{0,30}?\bsystem\b",
+        r"\b(?:ignore|disregard|forget)\b[^.]{0,30}?\bsystem\b",
     ),
     # --- System-prompt exfiltration -----------------------------------------
     _rule(
@@ -52,7 +52,7 @@ _RULES: tuple[_Rule, ...] = (
         Severity.HIGH,
         "Attempt to reveal or repeat the system prompt / hidden instructions.",
         r"\b(?:reveal|repeat|print|show|display|output|tell me|what (?:is|are|were))\b"
-        r"[^.\n]{0,40}?\b(?:system prompt|system message|initial instructions|"
+        r"[^.]{0,40}?\b(?:system prompt|system message|initial instructions|"
         r"your instructions|hidden (?:prompt|instructions)|the prompt above)\b",
     ),
     # --- Role override / persona injection ----------------------------------
@@ -61,7 +61,7 @@ _RULES: tuple[_Rule, ...] = (
         Severity.HIGH,
         "Role-override / jailbreak persona attempt.",
         r"\b(?:you are now|act as|pretend to be|from now on you are|"
-        r"you are no longer|enable|activate)\b[^.\n]{0,30}?"
+        r"you are no longer|enable|activate)\b[^.]{0,30}?"
         r"\b(?:dan|do anything now|developer mode|jailbreak|unrestricted|"
         r"no restrictions|without restrictions|admin|root|sudo)\b",
     ),
@@ -69,7 +69,7 @@ _RULES: tuple[_Rule, ...] = (
         "injection.role_override",
         Severity.MEDIUM,
         "Instruction to abandon safety rules or content policy.",
-        r"\b(?:ignore|bypass|disable|turn off|forget)\b[^.\n]{0,30}?"
+        r"\b(?:ignore|bypass|disable|turn off|forget)\b[^.]{0,30}?"
         r"\b(?:safety|guardrails?|content policy|filters?|restrictions?|"
         r"moderation|guidelines)\b",
     ),
